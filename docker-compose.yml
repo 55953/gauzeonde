@@ -1,0 +1,91 @@
+version: '3.9'
+
+services:
+
+  db:
+    image: postgres:15
+    container_name: gauzeonde_db
+    environment:
+      POSTGRES_DB: gauzeonde
+      POSTGRES_USER: gauzeonde_user
+      POSTGRES_PASSWORD: strongpassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    # Optionally add a healthcheck:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gauzeonde_user -d gauzeonde"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: gauzeonde_redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gauzeonde_api
+    depends_on:
+      - db
+      - redis
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: gauzeonde
+      DB_USERNAME: gauzeonde_user
+      DB_PASSWORD: strongpassword
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CI_ENVIRONMENT: development
+      APP_KEY: "base64:changeme"
+      # ... other env vars
+    ports:
+      - "80:80"
+    volumes:
+      - ./backend:/var/www/html
+    restart: unless-stopped
+
+  websocket:
+    build:
+      context: ./websocket
+    container_name: gauzeonde_websocket
+    depends_on:
+      - backend
+      - redis
+    environment:
+      WS_PORT: 3001
+      WEBSOCKET_BRIDGE_SECRET: supersecret
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # ... other env vars
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./websocket:/usr/src/app
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gauzeonde_frontend
+    environment:
+      - NODE_ENV=production
+      # for create-react-app's public API endpoints:
+      - REACT_APP_API_URL=http://localhost/api
+      - REACT_APP_WS_URL=http://localhost:3001
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+      - websocket
+    restart: unless-stopped
+
+volumes:
+  pgdata:

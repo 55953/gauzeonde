@@ -1,0 +1,21 @@
+POST /api/shipments/assign/12
+Content-Type: application/json
+Authorization: Bearer {your-jwt}
+
+{
+  "driver_id": 5
+}
+
+
+{
+  "id": 12,
+  "sender_id": 3,
+  "tracking_number": "ABC123XYZ9",
+  "description": "Some shipment",
+  "origin": "Washington, DC",
+  "destination": "Dallas, TX",
+  "weight": "12.5",
+  "status": "assigned",
+  "driver_id": 5,
+  ...
+}

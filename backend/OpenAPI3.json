@@ -1,0 +1,847 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Gauzeonde Transport API",
+    "description": "API for Uber-style long-haul shipping with real-time tracking, driver transfer, analytics, and event-driven notifications.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "https://api.gauzeonde.com" }
+  ],
+  "security": [
+    { "BearerAuth": [] }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "role": { "type": "string", "enum": ["driver", "sender", "admin"] },
+          "status": { "type": "string", "enum": ["active", "pending_verification", "blocked", "suspended", "offline"] },
+          "kyc_status": { "type": "string", "enum": ["pending", "verified", "rejected", "not_required"] },
+          "document_status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+          "rating": { "type": "number", "format": "float" }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "type": { "type": "string", "enum": ["profile_picture", "driver_license", "insurance"] },
+          "file": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+          "uploaded_at": { "type": "string", "format": "date-time" },
+          "remarks": { "type": "string" }
+        }
+      },
+      "Shipment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "origin": { "type": "string" },
+          "destination": { "type": "string" },
+          "weight": { "type": "number" },
+          "description": { "type": "string" },
+          "driver_id": { "type": "integer" },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending", "assigned", "in_transit", "out_for_delivery", "delivered", "cancelled", "transferred"
+            ]
+          },
+          "tracking_number": { "type": "string" }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "driver_id": { "type": "integer" },
+          "latitude": { "type": "number", "format": "float" },
+          "longitude": { "type": "number", "format": "float" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Transfer": {
+        "type": "object",
+        "properties": {
+          "shipment_id": { "type": "integer" },
+          "from_driver": { "type": "integer" },
+          "to_driver": { "type": "integer" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BatchLocations": {
+        "type": "object",
+        "properties": {
+          "count": { "type": "integer" },
+          "batch": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Location" }
+          }
+        }
+      },
+      "StatusOptions": {
+        "type": "object",
+        "properties": {
+          "user_statuses": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["active", "pending_verification", "blocked", "suspended", "offline"] }
+          },
+          "document_statuses": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["pending", "approved", "rejected"] }
+          },
+          "kyc_statuses": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["pending", "verified", "rejected", "not_required"] }
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "SimpleMessage": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "User registration",
+        "tags": ["Auth"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phone": { "type": "string" },
+                  "password": { "type": "string", "format": "password" },
+                  "role": { "type": "string", "enum": ["driver", "sender", "admin"] }
+                },
+                "required": ["name", "email", "password", "role"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration successful. Activation code sent.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/activate": {
+      "post": {
+        "summary": "Activate user via code",
+        "tags": ["Auth"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "code": { "type": "string" }
+                },
+                "required": ["email", "code"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account activated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "User login",
+        "tags": ["Auth"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "format": "password" }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JWT token and profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/request-password-reset": {
+      "post": {
+        "summary": "Request password reset",
+        "tags": ["Auth"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" }
+                },
+                "required": ["email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reset link sent",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "summary": "Reset password using token",
+        "tags": ["Auth"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": { "type": "string" },
+                  "password": { "type": "string", "format": "password" }
+                },
+                "required": ["token", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successful",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List/filter users (admin)",
+        "responses": {
+          "200": {
+            "description": "User list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user profile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/{id}/status": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Admin updates user status/document/KYC/online/rating",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "enum": ["active", "pending_verification", "blocked", "suspended", "offline"] },
+                  "online": { "type": "boolean" },
+                  "document_status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+                  "kyc_status": { "type": "string", "enum": ["pending", "verified", "rejected", "not_required"] },
+                  "rating": { "type": "number", "format": "float" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/{id}/online": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Driver sets themselves online/offline",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "online": { "type": "boolean" }
+                },
+                "required": ["online"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/{id}/block": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Admin blocks a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User blocked",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/{id}/unblock": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Admin unblocks a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User unblocked",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/{id}/upload-document": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Upload user document",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "enum": ["profile_picture", "driver_license", "insurance"] },
+                  "document": { "type": "string", "format": "binary" }
+                },
+                "required": ["type", "document"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document uploaded, pending review",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/{id}/documents": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List user documents",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Document" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/status-options": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all allowed user/document/KYC statuses",
+        "responses": {
+          "200": {
+            "description": "Status enums",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StatusOptions" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/driver/location": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Driver updates location (live GPS)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": { "type": "number", "format": "float" },
+                  "longitude": { "type": "number", "format": "float" }
+                },
+                "required": ["latitude", "longitude"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Location updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shipments": {
+      "get": {
+        "tags": ["Shipments"],
+        "summary": "List shipments (with filters)",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "driver_id", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipment list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Shipment" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Shipments"],
+        "summary": "Create new shipment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "origin": { "type": "string" },
+                  "destination": { "type": "string" },
+                  "weight": { "type": "number" },
+                  "description": { "type": "string" }
+                },
+                "required": ["origin", "destination", "weight"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shipment created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Shipment" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shipments/assign/{id}": {
+      "post": {
+        "tags": ["Shipments"],
+        "summary": "Assign driver to shipment",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "driver_id": { "type": "integer" }
+                },
+                "required": ["driver_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shipment assigned",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimpleMessage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shipment/{tracking}/location": {
+      "get": {
+        "tags": ["Shipments"],
+        "summary": "Get live location of shipment by tracking number",
+        "parameters": [
+          { "name": "tracking", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Driver location",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Location" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shipment/{id}/transfer-qr": {
+      "get": {
+        "tags": ["Shipments"],
+        "summary": "Get QR code for transfer hand-off",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "QR code image",
+            "content": {
+              "image/png": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/shipment/{id}/accept-transfer": {
+      "post": {
+        "tags": ["Shipments"],
+        "summary": "Driver accepts shipment transfer using QR code",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transfer_token": { "type": "string" }
+                },
+                "required": ["transfer_token"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer complete",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Transfer" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shipment/{id}/transfer": {
+      "post": {
+        "tags": ["Shipments"],
+        "summary": "Driver/admin transfers shipment to another driver",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "to_driver_id": { "type": "integer" }
+                },
+                "required": ["to_driver_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer recorded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Transfer" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/batch-driver-locations": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Pushes all live driver locations to the admin dashboard",
+        "responses": {
+          "200": {
+            "description": "Batch pushed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BatchLocations" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/driver-locations": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get current live driver locations (for polling)",
+        "responses": {
+          "200": {
+            "description": "Batch of driver locations",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BatchLocations" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/batch-driver-locations/region/{region}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Push batch locations for all drivers in a region",
+        "parameters": [
+          { "name": "region", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch pushed for region",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BatchLocations" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/batch-driver-locations/shipments": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Push batch locations for drivers of given shipments",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "shipment_ids": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  },
+                  "room": { "type": "string" }
+                },
+                "required": ["shipment_ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch pushed for shipments",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BatchLocations" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/batch-driver-locations/bounding-box": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Push batch locations for all drivers within a bounding box",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "min_lat": { "type": "number", "format": "float" },
+                  "max_lat": { "type": "number", "format": "float" },
+                  "min_lng": { "type": "number", "format": "float" },
+                  "max_lng": { "type": "number", "format": "float" },
+                  "room": { "type": "string" }
+                },
+                "required": ["min_lat", "max_lat", "min_lng", "max_lng"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch pushed for area",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BatchLocations" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

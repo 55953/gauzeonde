@@ -1,0 +1,46 @@
+FROM php:8.2-apache
+
+WORKDIR /var/www/html
+
+# Copy all your project files (including public/, app/, etc)
+COPY . .
+
+# Enable Apache mod_rewrite (for pretty URLs, required by CodeIgniter 4)
+RUN a2enmod rewrite
+
+# Copy your custom Apache vhost with DocumentRoot and Directory config
+COPY 000-default.conf /etc/apache2/sites-available/000-default.conf
+
+# Set Apache to use 'public' as DocumentRoot
+# RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+
+# Recommended: Set Directory permissions
+# RUN sed -i 's|<Directory /var/www/>|<Directory /var/www/html/public/>|g' /etc/apache2/apache2.conf
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y libpq-dev libicu-dev unzip git netcat-openbsd msmtp msmtp-mta \
+    && docker-php-ext-install pdo pdo_pgsql pgsql intl
+
+    
+# Suppress "Could not reliably determine the server's fully qualified domain name" warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# EXPLICITLY set DocumentRoot, even if already in Dockerfile
+# RUN echo '<VirtualHost *:80> DocumentRoot /var/www/html/public <Directory /var/www/html/public> AllowOverride All Require all granted </Directory> </VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+
+# EMAIL: Configure msmtp for sending emails
+
+# COPY msmtprc /etc/msmtprc
+# RUN chmod 600 /etc/msmtprc \
+#     && chown www-data:www-data /etc/msmtprc
+
+# (Composer install, etc.)
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN composer install --no-dev --optimize-autoloader
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+
+EXPOSE 80

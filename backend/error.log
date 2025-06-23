@@ -1,0 +1,2 @@
+[Thu Jun 19 04:14:05.823241 2025] [core:alert] [pid 25:tid 25] [client 172.18.0.1:47964] /var/www/html/public/.htaccess: Invalid command 'Header', perhaps misspelled or defined by a module not included in the server configuration, referer: http://localhost:3000/
+[Thu Jun 19 04:14:08.735766 2025] [core:alert] [pid 35:tid 35] [client 172.18.0.1:47978] /var/www/html/public/.htaccess: Invalid command 'Header', perhaps misspelled or defined by a module not included in the server configuration, referer: http://localhost:3000/
