@@ -160,6 +160,4 @@ class Admin extends ResourceController
 
         return $this->respond(['count' => count($locations), 'batch' => $locations]);
     }
-
-
 }

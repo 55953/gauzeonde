@@ -71,25 +71,31 @@ class Auth extends ResourceController
             return $this->failUnauthorized('Invalid credentials');
         }
         if ($user['status'] !== 'active') {
-            return $this->failUnauthorized('Account not active. Please activate using your code.');
+            return $this->failUnauthorized('Account not active. Please activate using the code sent to your email. ei:' . base_url("api/auth/activate/") . '<activation_code>');
         }
         // if ($user['status'] !== 'active' || $user['kyc_status'] !== 'verified') {
         //     return $this->failUnauthorized('Account not active or KYC not verified');
         // }
-
+        
         $key = getenv('JWT_SECRET') ?: 'supersecretkey';
         $payload = [
             'iss' => base_url(),
             'aud' => base_url(),
             'sub' => $user['id'],
             'email' => $user['email'],
+            'name' => $user['name'],
             'role' => $user['role'],
             'iat' => time(),
             'exp' => time() + 3600
         ];
         $jwt = JWT::encode($payload, $key, 'HS256');
 
-        return $this->respond(['token' => $jwt]);
+        return $this->respond(['token' => $jwt, 'user' => [
+            'id' => $user['id'],
+            'email' => $user['email'],
+            'name' => $user['name'],
+            'role' => $user['role']
+        ]]);
     }
 
     /**

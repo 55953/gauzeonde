@@ -9,7 +9,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use App\Models\UserModel;
 
-class JwtAuth implements FilterInterface
+class JwtAuthEnhanced implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {

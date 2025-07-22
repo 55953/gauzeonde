@@ -13,6 +13,7 @@ use CodeIgniter\Filters\PageCache;
 use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
 use App\Filters\JwtAuth;
+use App\Filters\JwtAuthEnhanced;
 use App\Filters\AuthFilter;
 use App\Filters\RoleFilter;
 use App\Filters\Cors; // Custom CORS filter
@@ -39,8 +40,8 @@ class Filters extends BaseFilters
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'jwt'           => JwtAuth::class,
-        'roleFilter'    => RoleFilter::class,
-        'authFilter'    => AuthFilter::class,
+        'role'    => RoleFilter::class,
+        'auth'    => JwtAuthEnhanced::class,
     ];
 
     /**
