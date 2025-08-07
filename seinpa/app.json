@@ -15,7 +15,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -29,9 +32,12 @@
       "favicon": "./assets/favicon.png"
     },
     "platforms": [
-          "ios",
-          "android",
-          "web"
-        ]
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }
