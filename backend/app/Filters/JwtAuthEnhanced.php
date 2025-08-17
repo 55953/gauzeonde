@@ -27,7 +27,7 @@ class JwtAuthEnhanced implements FilterInterface
         try {
             $decoded = JWT::decode($token, new Key($key, 'HS256'));
             $userModel = new UserModel();
-            $user = $userModel->find($decoded->sub);
+            $user = $userModel->find($decoded->user->sub);
 
             if (!$user) {
                 return service('response')->setJSON([

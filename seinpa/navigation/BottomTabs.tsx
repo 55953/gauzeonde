@@ -1,9 +1,9 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import HomeScreen from "../screens/HomeScreen";
-import ServicesScreen from "../screens/ServicesScreen";
-import ActivityScreen from "../screens/ActivityScreen";
-import AccountScreen from "../screens/AccountScreen";
+import HomeScreen from "../app/(dashboard)";
+import ServicesScreen from "../app/(dashboard)/Services";
+import ActivityScreen from "../app/(dashboard)/Activity";
+import AccountScreen from "../app/(dashboard)/Account";
 import { Ionicons } from "@expo/vector-icons";
 
 export type RootTabParamList = {

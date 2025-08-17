@@ -27,7 +27,7 @@ class JwtAuth implements FilterInterface
         try {
             $decoded = \Firebase\JWT\JWT::decode($token, new \Firebase\JWT\Key($key, 'HS256'));
             $userModel = new \App\Models\UserModel();
-            $user = $userModel->find($decoded->sub);
+            $user = $userModel->find($decoded->user->sub);
 
             if (!$user) {
                 return service('response')->setJSON([

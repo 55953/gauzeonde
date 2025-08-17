@@ -17,7 +17,8 @@ class RoleFilter implements FilterInterface
     {
         // Get user from service or request (depends on your JWTFilter implementation)
         // This assumes you use a shared Auth service or attach the user in JWTFilter.
-        $user = service('auth')->user();
+        // var_dump(service('auth')); die();
+        $user = service('auth')->currentUser();
 
         if (!$user) {
             return Services::response()
@@ -27,9 +28,10 @@ class RoleFilter implements FilterInterface
 
         // $arguments is an array of allowed roles: e.g., ['admin'], ['driver', 'sender']
         $allowedRoles = $arguments ?? [];
-
+        $userRole = is_array($user) ? ($user['role'] ?? null) : ($user->role ?? null);
+        
         // The user object/array should have a 'role' property (adjust as needed)
-        if (!in_array($user->role, $allowedRoles)) {
+       if (!$userRole || !in_array($userRole, $allowedRoles)) {
             return Services::response()
                 ->setStatusCode(403)
                 ->setJSON(['message' => 'Forbidden: insufficient role']);

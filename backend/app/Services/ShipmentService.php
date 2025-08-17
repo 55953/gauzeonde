@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\ShipmentModel;
 use CodeIgniter\Events\Events;
+use CodeIgniter\Config\BaseService;
 
-class ShipmentService
+
+class ShipmentService extends BaseService
 {
     /**
      * Assign a shipment to a driver.

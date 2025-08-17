@@ -4,9 +4,9 @@ namespace App\Services;
 
 use CodeIgniter\Events\Events;
 use App\Models\NotificationModel;
+use CodeIgniter\Config\BaseService;
 
-
-class SmsService
+class SmsService extends BaseService
 {
     /**
      * Send an SMS notification.

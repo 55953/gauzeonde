@@ -14,7 +14,6 @@ export default function AdminDashboard({ user }: { user: User }) {
   }, []);
 
   return (
-    <Layout>
       <View>
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>Admin Panel</Text>
         <Text style={{ marginTop: 8, marginBottom: 4, fontWeight: "bold" }}>All Shipments</Text>
@@ -38,6 +37,5 @@ export default function AdminDashboard({ user }: { user: User }) {
           )}
         />
       </View>
-    </Layout>
   );
 }

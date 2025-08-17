@@ -62,6 +62,17 @@ class Auth extends ResourceController
 
     public function login()
     {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->respond('Wrong request method', 405);
+        }
+        $rules = [
+            'email' => 'required',
+            'password' => 'required'
+        ];
+
+        if (!$this->validate($rules)) {
+            return $this->failValidationErrors($this->validator->getErrors());
+        }
         $userModel = new UserModel();
         $email = $this->request->getVar('email');
         $password = $this->request->getVar('password');
@@ -81,21 +92,20 @@ class Auth extends ResourceController
         $payload = [
             'iss' => base_url(),
             'aud' => base_url(),
-            'sub' => $user['id'],
-            'email' => $user['email'],
-            'name' => $user['name'],
-            'role' => $user['role'],
+            'user' => [
+                'sub' => $user['id'],
+                'email' => $user['email'],
+                'name' => $user['name'],
+                'role' => $user['role'],
+                'phone' => $user['phone'],
+                'status' => $user['status']
+            ],
             'iat' => time(),
             'exp' => time() + 3600
         ];
         $jwt = JWT::encode($payload, $key, 'HS256');
 
-        return $this->respond(['token' => $jwt, 'user' => [
-            'id' => $user['id'],
-            'email' => $user['email'],
-            'name' => $user['name'],
-            'role' => $user['role']
-        ]]);
+        return $this->respond(['token' => $jwt]);
     }
 
     /**
@@ -253,5 +263,24 @@ class Auth extends ResourceController
         return $this->respond(['message' => 'Account is activated, you can now login']);
     }
 
+    // For /auth/password/forgot endpoint
+    public function forgotPassword()
+    {
+        $data = $this->request->getJSON(true) ?? $this->request->getPost();
+        if ($this->authService->sendPasswordReset($data['email'])) {
+            return $this->respond(['status'=>'ok']);
+        }
+        return $this->fail('Unable to send reset');
+    }
+
+    // For /auth/password/reset endpoint
+    public function rresetPassword()
+    {
+        $data = $this->request->getJSON(true) ?? $this->request->getPost();
+        if ($this->authService->resetPassword($data['email'], $data['token'], $data['new_password'])) {
+            return $this->respond(['status'=>'password_reset']);
+        }
+        return $this->fail('Unable to reset password');
+    }
 
 }

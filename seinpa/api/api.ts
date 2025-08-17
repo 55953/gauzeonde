@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { getToken } from "../auth/auth";
 import { Shipment, User } from "../types";
 
 // CHANGE THIS to your deployed API URL
@@ -7,53 +6,74 @@ export const API_BASE = process.env.EXPO_PUBLIC_API_BASE; // e.g. Docker host or
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE,
-  headers: { "Content-Type": "application/json" },
-  timeout: 5000,
+  headers: { 
+    "Access-Control-Allow-Origin": "*", 
+    "Content-Type": "application/json" ,
+    },
+  timeout: 15000,
 });
 
 // const api = axios.create({
 //   baseURL: API_BASE,
 //   headers: {
+//     'Access-Control-Allow-Origin': '*',
+//     'Access-Control-Allow-Credentials': true,
+//     'Access-Control-Expose-Headers': 'Content-Security-Policy',
 //     'Content-Type': 'application/json',
 //   },
+//   timeout: 15000
 // });
 
 // Inject JWT token into all requests, if available
-api.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
-    const token = getToken();
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// api.interceptors.request.use(
+//   (config: AxiosRequestConfig) => {
+//     const session = useSession();
+//     const token = session?.token;
+//     console.log("Setting auth token:", token);
+//     if (token && config.headers) {
+//       config.headers.Authorization = `Bearer ${token}`;
+//     }
+//     return config;
+//   },
+//   (error) => Promise.reject(error)
+// );
 
 // --- Auth Token Helper ---
 // export function setAuthToken(token) {
+//   console.log("Setting auth token:", token);
 //   if (token) {
-//     api.defaults.headers['Authorization'] = `Bearer ${token}`;
-//     localStorage.setItem('token', token);
+//     // Set the Authorization header for all requests
+//     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
 //   } else {
-//     delete api.defaults.headers['Authorization'];
-//     localStorage.removeItem('token');
+//     delete api.defaults.headers.common['Authorization'];
 //   }
 // }
+// Keep token in memory (best for RN; you can hydrate from storage in your AuthContext)
+// let authToken: string | null = null;
+
+export async function setAuthToken(token: string | null) {
+
+  if (token) await (api.defaults.headers.common["Authorization"] = `Bearer ${token}`);
+  else await (delete api.defaults.headers.common["Authorization"]);
+}
 
 
 // --- AUTH ENDPOINTS ---
 export const AuthApi = {
   login: (email: string, password: string) =>
-    api.post<{ token: string }>("/auth/login", { email, password }),
+    api.post<{ token: string | null }>("/auth/login", { email, password }),
   register: (user: Partial<User>) =>
     api.post<{ user: User }>("/auth/register", user),
   activate: (code: string) =>
-    api.post("/auth/activate", { code }),
+    api.get(`/auth/activate/${code}`),
+  // activate: (email: string, code: string) =>
+  //   api.post("/auth/activate", { email, code }),
   forgotPassword: (email: string) =>
     api.post('/auth/password/email', { email }),
   resetPassword: (payload: { email: string; password: string; token: string }) =>
     api.post('/auth/password/reset', payload),
+  me: () => api.get("/users/me"),
 };
 
 // --- USER ENDPOINTS ---
@@ -78,10 +98,36 @@ export const UserApi = {
 // --- DRIVER ENDPOINTS ---
 export const DriverApi = {
 
+  me: () => api.get("/drivers/me"),
+  setOnline: (online: boolean) =>
+    api.post("/drivers/online", { online }),
+  getOnline: () =>
+    api.get("/drivers/online"),
+  updateCapacity: (payload: Partial<{
+    max_weight_kg: number;
+    max_volume_cuft: number;
+    max_length_cm: number;
+    max_width_cm: number;
+    max_height_cm: number;
+    vehicle_type: string;
+  }>) => api.put("/drivers/capacity", payload),
   getShipments: (driverId: number) =>
     api.get<Shipment[]>(`/drivers/${driverId}/shipments`),
   getLocation: (driverId: number) =>
     api.get<{ lat: number; lng: number }>(`/drivers/${driverId}/location`),
+  listOpenShipments: () => api.get("/drivers/shipments/open"),
+
+  myShipments: () => api.get("/drivers/shipments/my"),
+
+  acceptShipment: (shipmentId: number) =>
+    api.post(`/drivers/shipments/${shipmentId}/accept`, {}),
+
+  updateLocation: (payload: {
+    lat: number;
+    lng: number;
+    speed?: number;
+    heading?: number;
+  }) => api.post("/drivers/location", payload),
   // Add more as needed
 };
 
@@ -93,10 +139,12 @@ export const ShipmentApi = {
   track: (trackingNumber: string) => api.get<Shipment>(`/shipments/track/${trackingNumber}`),
   get: (id: number) => api.get(`/shipments/${id}`),
   update: (id: number, data: Partial<Shipment>) => api.put(`/shipments/${id}`, data),
+  updateStatus: (shipmentId: number, status: string) => api.patch(`/shipments/${shipmentId}/status`, { status }),
   delete: (id: number) => api.delete(`/shipments/${id}`),
   statusHistory: (id: number) => api.get(`/shipments/${id}/history`),
   transfer: (id: number, toDriverId: number, notes: string) => api.post(`/shipments/${id}/transfer`, { to_driver_id: toDriverId, notes }),
   payments: (id: number) => api.get(`/shipments/${id}/payments`),
+  getLocations: (shipmentId: number) => api.get(`/shipments/${shipmentId}/locations`),
 };
 
 // --- SENDER ENDPOINTS ---

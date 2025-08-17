@@ -14,30 +14,34 @@ class Cors implements FilterInterface
     {
         // Use your frontend URL here, not * if using credentials!
         header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: X-API-KEY, X-Requested-With, Accept, Content-Type, Authorization');
+        header('Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method, Authorization, Access-Control-Allow-Origin');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
         header('Access-Control-Allow-Credentials: true');
+        header("Access-Control-Max-Age: 3600"); 
 
         // For preflight (OPTIONS) requests, stop further processing and return 200 OK immediately
-        if ($request->getMethod() === 'options') {
+        if ($request->getMethod() === 'OPTIONS') {
             // Clean output buffer if any, then return a CI Response
-            ob_end_clean();
-            $response = Services::response();
-            $response->setStatusCode(204);
-            $response->setHeader('Access-Control-Allow-Origin', '*');
-            $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            $response->setHeader('Access-Control-Allow-Headers', 'X-API-KEY, X-Requested-With, Accept, Content-Type, Authorization');
-            $response->setHeader('Access-Control-Allow-Credentials', 'true');
-            $response->send();
-            exit;
+            http_response_code(200);
+            exit();
+            // ob_end_clean();
+            // $response = Services::response();
+            // $response->setStatusCode(204);
+            // $response->setHeader('Access-Control-Allow-Origin', '*');
+            // $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            // $response->setHeader('Access-Control-Allow-Headers', 'X-API-KEY, X-Requested-With, Accept, Content-Type, Authorization, Access-Control-Allow-Origin');
+            // $response->setHeader('Access-Control-Allow-Credentials', 'true');
+            // $response->send();
+            // exit;
+            // die();
         }
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        $response->setHeader('Access-Control-Allow-Origin', '*');
-        $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        $response->setHeader('Access-Control-Allow-Headers', 'X-API-KEY, X-Requested-With, Accept, Content-Type, Authorization');
-        $response->setHeader('Access-Control-Allow-Credentials', 'true');
+        // $response->setHeader('Access-Control-Allow-Origin', '*');
+        // $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        // $response->setHeader('Access-Control-Allow-Headers', 'X-API-KEY, X-Requested-With, Accept, Content-Type, Authorization');
+        // $response->setHeader('Access-Control-Allow-Credentials', 'true');
     }
 }

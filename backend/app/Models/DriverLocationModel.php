@@ -10,7 +10,7 @@ class DriverLocationModel extends Model
     protected $primaryKey = 'id';
 
     protected $allowedFields = [
-        'driver_id', 'latitude', 'longitude', 'updated_at'
+        'driver_id', 'latitude', 'longitude', 'speed','heading','updated_at','recorded_at'
     ];
 
     // Timestamps are managed manually

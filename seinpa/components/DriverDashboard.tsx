@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList } from "react-native";
 import api from "../api/api";
 import { User, Shipment } from "../types";
-import Layout from "../components/Layout";
 
 export default function DriverDashboard({ user }: { user: User }) {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -13,7 +12,6 @@ export default function DriverDashboard({ user }: { user: User }) {
   }, [user]);
   const earnings = shipments.reduce((sum, s) => sum + (s.payout || 0), 0);
   return (
-    <Layout>
       <View>
         <Text style={{ fontSize:18, fontWeight:"bold" }}>Welcome, {user.name}</Text>
         <Text>Total Shipments: {shipments.length}</Text>
@@ -28,6 +26,5 @@ export default function DriverDashboard({ user }: { user: User }) {
           )}
         />
       </View>
-    </Layout>
   );
 }

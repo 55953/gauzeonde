@@ -12,9 +12,9 @@ $routes->get('about', 'Home::about');
 //     return 'OK';
 // });
 
-$routes->group('api', ['filter' => 'cors'], function(RouteCollection $routes): void {
+$routes->group('api', function(RouteCollection $routes): void {
 
-    $routes->options('auth', static function () {
+    $routes->options('(:any)', static function () {
         // Implement processing for normal non-preflight OPTIONS requests,
         // if necessary.
         $response = response();
@@ -29,6 +29,7 @@ $routes->group('api', ['filter' => 'cors'], function(RouteCollection $routes): v
     $routes->post('auth/register',      'Auth::register');
     $routes->get('auth/register',       'Auth::register');
     $routes->post('auth/login',         'Auth::login');
+    $routes->get('auth/login',         'Auth::login');
     $routes->get('auth/activate/(:segment)', 'Auth::activate/$1');
     $routes->post('auth/request-password-reset', 'Auth::requestPasswordReset');
     $routes->post('auth/reset-password', 'Auth::resetPassword');
@@ -37,11 +38,11 @@ $routes->group('api', ['filter' => 'cors'], function(RouteCollection $routes): v
 
     // --- USER (auth required) ---
     $routes->group('', ['filter' => 'auth'], function($routes) {
-        $routes->get('users',               'User::index', ['filter' => 'role:admin']);  // Only admin
-        $routes->get('users/me',            'User::me'); // Any logged in user
-        $routes->get('users/(:num)',        'User::show/$1', ['filter' => 'role:admin']);
-        $routes->put('users/(:num)',        'User::update/$1'); // User can update self, or admin can update any
-        $routes->delete('users/(:num)',     'User::delete/$1', ['filter' => 'role:admin']);
+        $routes->get('users',               'Users::index', ['filter' => 'role:admin']);  // Only admin
+        $routes->get('users/me',            'Users::me'); // Any logged in user
+        $routes->get('users/(:num)',        'Users::show/$1', ['filter' => 'role:admin']);
+        $routes->put('users/(:num)',        'Users::update/$1'); // User can update self, or admin can update any
+        $routes->delete('users/(:num)',     'Users::delete/$1', ['filter' => 'role:admin']);
     });
 
     // --- USER DOCUMENTS / KYC ---
@@ -50,15 +51,6 @@ $routes->group('api', ['filter' => 'cors'], function(RouteCollection $routes): v
         $routes->get('users/(:num)/documents',     'UserDocument::list/$1');
         $routes->get('users/(:num)/documents/(:num)', 'UserDocument::show/$1/$2');
         $routes->delete('users/(:num)/documents/(:num)', 'UserDocument::delete/$1/$2', ['filter' => 'role:admin']);
-    });
-
-    // --- DRIVERS ---
-    $routes->group('', ['filter' => 'auth'], function($routes) {
-        $routes->get('drivers',                   'Driver::index', ['filter' => 'role:admin']);
-        $routes->get('drivers/online',            'Driver::online');
-        $routes->get('drivers/(:num)',            'Driver::show/$1');
-        $routes->put('drivers/(:num)',            'Driver::update/$1', ['filter' => 'role:driver']);
-        $routes->put('drivers/(:num)/status',     'Driver::setStatus/$1', ['filter' => 'role:driver']);
     });
 
     // --- ITINERARIES (driver-only) ---
@@ -81,13 +73,6 @@ $routes->group('api', ['filter' => 'cors'], function(RouteCollection $routes): v
         $routes->get('shipments/track/(:segment)','Shipment::track/$1');
         $routes->post('shipments/(:num)/transfer','ShipmentTransfer::transfer/$1', ['filter' => 'role:driver']);
         $routes->get('shipments/(:num)/transfers','ShipmentTransfer::history/$1');
-    });
-
-    // --- DRIVER LOCATION UPDATES (driver only) ---
-    $routes->group('', ['filter' => 'auth'], function($routes) {
-        $routes->post('drivers/(:num)/location',  'DriverLocation::update/$1', ['filter' => 'role:driver']);
-        $routes->get('drivers/(:num)/locations',  'DriverLocation::history/$1', ['filter' => 'role:driver']);
-        $routes->get('drivers/locations/batch',   'DriverLocation::batch', ['filter' => 'role:admin']);
     });
 
     // --- PAYMENTS ---
@@ -118,6 +103,32 @@ $routes->group('api', ['filter' => 'cors'], function(RouteCollection $routes): v
     // --- HEALTH CHECK / MISC ---
     $routes->get('health',    'System::health');
     $routes->get('status',    'System::status');
+
+    // DRIVER (protected by JWT + role:driver)
+    $routes->group('drivers', ['filter' => ['auth','role:driver']], static function($routes) {
+        $routes->get('me',                        'Drivers::me');
+        $routes->post('online',                   'Drivers::Online'); // {online: bool}
+        $routes->get('online',                    'Drivers::online');
+        $routes->put('capacity',                  'Drivers::updateCapacity'); // limits
+        $routes->get('shipments/open',            'Drivers::listOpenShipments'); // view available
+        $routes->get('shipments/my',              'Drivers::myShipments'); // assigned to me
+        $routes->post('shipments/(:num)/accept',  'Drivers::acceptShipment/$1'); // assign
+        $routes->post('location',                 'Drivers::updateLocation'); // {lat,lng, ...}
+    });
+
+    // --- DRIVER LOCATION UPDATES (driver only) ---
+    $routes->group('', ['filter' => 'auth'], function($routes) {
+        $routes->post('drivers/(:num)/location',  'DriverLocation::update/$1', ['filter' => 'role:driver']);
+        $routes->get('drivers/(:num)/locations',  'DriverLocation::history/$1', ['filter' => 'role:driver']);
+        $routes->get('drivers/locations/batch',   'DriverLocation::batch', ['filter' => 'role:admin']);
+    });
+    // --- DRIVERS ---
+    $routes->group('', ['filter' => 'auth'], function($routes) {
+        $routes->get('drivers',                   'Driver::index', ['filter' => 'role:admin']);
+        $routes->get('drivers/(:num)',            'Driver::show/$1');
+        $routes->put('drivers/(:num)',            'Driver::update/$1', ['filter' => 'role:driver']);
+        $routes->put('drivers/(:num)/status',     'Driver::setStatus/$1', ['filter' => 'role:driver']);
+    });
 });
 
 
@@ -127,7 +138,7 @@ $routes->group('api', ['filter' => 'cors'], function(RouteCollection $routes): v
 
 // $routes->post('api/shipments', 'Shipments::create', ['filter' => 'jwt']);
 
-$routes->group('api', ['filter' => 'jwt,cors'], function($routes) {
+$routes->group('api', ['filter' => 'jwt'], function($routes) {
     $routes->get('auth/profile', 'Auth::profile');
     $routes->post('shipments', 'Shipments::create');
     $routes->post('itineraries', 'Itineraries::create');
