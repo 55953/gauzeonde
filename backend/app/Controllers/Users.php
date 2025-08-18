@@ -10,15 +10,23 @@ use App\Enums\KycStatus;
 use App\Models\UserDocumentModel;
 use App\Services\AuthService;
 
+
 class Users extends ResourceController
 {
+    protected UserModel $users;
+
+    public function __construct()
+    {
+        $this->users = new UserModel();
+    }
+
     /**
      * Get user profile by ID
      * GET /api/user/{id}
      */
     public function show($userId = null)
     {
-        $user = (new UserModel())->find($userId);
+        $user = $this->users->find($userId);
         if (!$user) {
             return $this->failNotFound('User not found');
         }
@@ -55,7 +63,7 @@ class Users extends ResourceController
             }
         }
 
-        (new UserModel())->update($userId, $data);
+        $this->users->update($userId, $data);
 
         return $this->respond(['message' => 'User updated']);
     }
@@ -66,26 +74,25 @@ class Users extends ResourceController
      */
     public function index()
     {
-        $model = new UserModel();
         $filters = $this->request->getGet();
 
         if (isset($filters['role'])) {
-            $model->where('role', $filters['role']);
+            $this->users->where('role', $filters['role']);
         }
         if (isset($filters['status'])) {
-            $model->where('status', $filters['status']);
+            $this->users->where('status', $filters['status']);
         }
         if (isset($filters['kyc_status'])) {
-            $model->where('kyc_status', $filters['kyc_status']);
+            $this->users->where('kyc_status', $filters['kyc_status']);
         }
         if (isset($filters['document_status'])) {
-            $model->where('document_status', $filters['document_status']);
+            $this->users->where('document_status', $filters['document_status']);
         }
         if (isset($filters['online'])) {
-            $model->where('online', (bool)$filters['online']);
+            $this->users->where('online', (bool)$filters['online']);
         }
 
-        $users = $model->findAll();
+        $users = $this->users->findAll();
         foreach ($users as &$u) unset($u['password']);
         return $this->respond($users);
     }
@@ -110,7 +117,7 @@ class Users extends ResourceController
             'online' => (bool)$input['online'],
             'last_online_at' => date('Y-m-d H:i:s')
         ];
-        (new UserModel())->update($userId, $data);
+        $this->users->update($userId, $data);
 
         return $this->respond(['message' => 'Online status updated']);
     }
@@ -122,7 +129,7 @@ class Users extends ResourceController
     public function block($userId = null)
     {
         if (!$userId) return $this->failValidationErrors(['message' => 'User ID required']);
-        (new UserModel())->update($userId, ['status' => 'blocked']);
+        $this->users->update($userId, ['status' => 'blocked']);
         return $this->respond(['message' => 'User blocked']);
     }
 
@@ -133,7 +140,7 @@ class Users extends ResourceController
     public function unblock($userId = null)
     {
         if (!$userId) return $this->failValidationErrors(['message' => 'User ID required']);
-        (new UserModel())->update($userId, ['status' => 'active']);
+        $this->users->update($userId, ['status' => 'active']);
         return $this->respond(['message' => 'User unblocked']);
     }
 
@@ -175,7 +182,7 @@ class Users extends ResourceController
     //     $file->move($path, $newName);
 
     //     // Save to DB (filename, status = pending)
-    //     (new UserModel())->update($userId, [
+    //     $this->users->update($userId, [
     //         'document_file' => $newName,
     //         'document_status' => 'pending'
     //     ]);
@@ -296,5 +303,103 @@ class Users extends ResourceController
         }
         return $this->respond($user);
     }
-    
+
+    /**
+     * GET /users?role=driver&online=true&status=active&vehicle_type=semi&page=1&per_page=50&search=john
+     *
+     * Filters:
+     * - role: driver|sender|admin
+     * - online: true|false
+     * - status: active|pending|suspended|...
+     * - vehicle_type: string (e.g., van, box, semi)
+     * - search: matches name/email/phone (contains)
+     * - page, per_page: pagination
+     */
+    public function getAllFilterBy()
+    {
+        $req = $this->request->getGet();
+
+        $role         = $req['role']         ?? null;
+        $onlineParam  = $req['online']       ?? null;
+        $status       = $req['status']       ?? null;
+        $vehicleType  = $req['vehicle_type'] ?? null;
+        $search       = $req['search']       ?? null;
+
+        $page     = (int)($req['page']     ?? 1);
+        $perPage  = (int)($req['per_page'] ?? 25);
+        $perPage  = max(1, min($perPage, 100));
+        // Pagination
+        $offset = ($page - 1) * $perPage;
+
+        $builder = $this->users->builder();
+
+        if ($role)        $builder->where('role', $role);
+        if ($status)      $builder->where('status', $status);
+        if ($vehicleType) $builder->where('vehicle_type', $vehicleType);
+
+        if ($onlineParam !== null) {
+            // Accept true/false/1/0
+            $online = filter_var($onlineParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($online !== null) {
+                $builder->where('online', $online);
+            }
+        }
+
+        if ($search) {
+            $builder->groupStart()
+            ->like('name', $search)
+            ->orLike('email', $search)
+            ->orLike('phone', $search)
+            ->groupEnd();
+        }
+
+         // --- total count (NO manual select/order here) ---
+        $countBuilder = clone $builder;
+        // By default countAllResults($reset = true) clears its own state; we don't reuse it anyway.
+        $total = (int) $countBuilder->countAllResults();
+
+        // --- rows with ordering & pagination ---
+        $rows = $builder
+            ->orderBy('online', 'DESC')
+            ->orderBy('last_online_at', 'DESC')
+            ->orderBy('name', 'ASC')
+            ->limit($perPage, $offset)
+            ->get()
+            ->getResultArray();
+
+        // Strip sensitive fields
+        $rows = array_map(function ($u) {
+            unset($u['password'], $u['reset_token'], $u['activation_code']);
+            return $u;
+        }, $rows);
+
+        return $this->respond([
+            'data' => $rows,
+            'meta' => [
+                'page'        => $page,
+                'per_page'    => $perPage,
+                'total'       => $total,
+                'total_pages' => (int) ceil($total / $perPage),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /drivers/online
+     * Shortcut for role=driver&online=true
+     */
+    public function onlineDrivers()
+    {
+        $rows = $this->users->where('role', 'driver')
+            ->where('online', true)
+            ->orderBy('last_online_at', 'DESC')
+            ->findAll(200);
+
+        $rows = array_map(function ($u) {
+            unset($u['password'], $u['reset_token'], $u['activation_code']);
+            return $u;
+        }, $rows);
+
+        return $this->respond(['data' => $rows]);
+    }
 }

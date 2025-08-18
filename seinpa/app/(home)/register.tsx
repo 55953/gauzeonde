@@ -32,7 +32,7 @@ export default function RegisterScreen() {
       }
       const res =  await AuthApi.register({name, email, phone, password, role});
       if (res.status !== 200) {
-        setErr(JSON.parse(res?.data?.messages || ["Unknown error"]));
+        setErr(res?.data?.messages || ["Unknown error"]);
         return;
       }
       setMsg("Registration successful : " + (res?.data?.message || "Unknown success message"));

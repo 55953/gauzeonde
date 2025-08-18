@@ -94,6 +94,14 @@ class CreateUsersTable extends Migration
         $db = \Config\Database::connect();
         $db->query("ALTER TABLE users ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP");
         $db->query("ALTER TABLE users ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP");
+        // $db->query("CREATE INDEX IF NOT EXISTS idx_users_role_online ON users (role, online)");
+        // $db->query("CREATE INDEX IF NOT EXISTS idx_users_last_online ON users (last_online_at)");
+        // $db->query("CREATE INDEX IF NOT EXISTS idx_users_status ON users (status)");
+        // $db->query("CREATE INDEX IF NOT EXISTS idx_users_vehicle_type ON users (vehicle_type)");
+        // CREATE INDEX IF NOT EXISTS idx_users_role_online ON users (role, online);
+        // CREATE INDEX IF NOT EXISTS idx_users_last_online ON users (last_online_at);
+        // CREATE INDEX IF NOT EXISTS idx_users_status ON users (status);
+        // CREATE INDEX IF NOT EXISTS idx_users_vehicle_type ON users (vehicle_type);
     }
 
     public function down()

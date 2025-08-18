@@ -93,7 +93,24 @@ export const UserApi = {
   getDocuments: (userId: number) => api.get(`/users/${userId}/documents`),
   deleteDocument: (userId: number, docId: number) =>
     api.delete(`/users/${userId}/documents/${docId}`),
+  getAllDrivers: (filters: Partial<{ online: boolean; status: string; vehicle_type: string; page: number; per_page: number }>) =>
+    api.get<User[]>("/users", { params: { role: "driver", ...filters } }),
+  filter: (param?: Record<string, any>) =>
+    api.get("/users", { params: { ...param } }),
 };
+
+// --- POINT OF ALL USER FILTERS ---
+// // list drivers with filters
+// const res = await UserApi.getAllDrivers({
+//   online: true,
+//   status: "active",
+//   vehicle_type: "semi",
+//   page: 1,
+//   per_page: 50,
+// });
+
+// // OR the generic /users filter call:
+// const res2 = await api.get("/users", { params: { role: "driver", online: true }});
 
 // --- DRIVER ENDPOINTS ---
 export const DriverApi = {

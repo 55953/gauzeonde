@@ -60,6 +60,25 @@ class Drivers extends ResourceController
         return $this->respond(['status' => 'ok', 'online' => $online]);
     }
 
+    /**
+     * GET /drivers/online
+     * Shortcut for role=driver&online=true
+     */
+    public function onlineDrivers()
+    {
+        $rows = $this->users->where('role', 'driver')
+            ->where('online', true)
+            ->orderBy('last_online_at', 'DESC')
+            ->findAll(200);
+
+        $rows = array_map(function ($u) {
+            unset($u['password'], $u['reset_token'], $u['activation_code']);
+            return $u;
+        }, $rows);
+
+        return $this->respond(['data' => $rows]);
+    }
+
     public function updateCapacity()
     {
         $user = $this->auth->currentUser();

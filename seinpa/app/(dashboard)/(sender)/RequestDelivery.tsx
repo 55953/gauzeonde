@@ -124,8 +124,10 @@ export default function RequestDelivery() {
     setIsFindingDrivers(true);
     try {
       // Simulate API call to find drivers
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const drivers = generateMockDrivers();
+      // await new Promise(resolve => setTimeout(resolve, 2000));
+      // const drivers = generateMockDrivers();
+      const drivers : Driver[] = await AuthApi.findDrivers(formData);
+
       setAvailableDrivers(drivers);
     } catch (error) {
       Alert.alert('Error', 'Failed to find drivers. Please try again.');

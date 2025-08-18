@@ -39,6 +39,7 @@ $routes->group('api', function(RouteCollection $routes): void {
     // --- USER (auth required) ---
     $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->get('users',               'Users::index', ['filter' => 'role:admin']);  // Only admin
+        $routes->get('users/all',           'Users::getAllFilterBy', ['filter' => 'role:admin']);  // Only admin
         $routes->get('users/me',            'Users::me'); // Any logged in user
         $routes->get('users/(:num)',        'Users::show/$1', ['filter' => 'role:admin']);
         $routes->put('users/(:num)',        'Users::update/$1'); // User can update self, or admin can update any
@@ -105,14 +106,15 @@ $routes->group('api', function(RouteCollection $routes): void {
     $routes->get('status',    'System::status');
 
     // DRIVER (protected by JWT + role:driver)
-    $routes->group('drivers', ['filter' => ['auth','role:driver']], static function($routes) {
+    $routes->group('drivers', ['filter' => 'auth'], static function($routes) {
         $routes->get('me',                        'Drivers::me');
-        $routes->post('online',                   'Drivers::Online'); // {online: bool}
-        $routes->get('online',                    'Drivers::online');
-        $routes->put('capacity',                  'Drivers::updateCapacity'); // limits
-        $routes->get('shipments/open',            'Drivers::listOpenShipments'); // view available
+        $routes->post('online',                   'Drivers::Online', ['filter' => 'role:driver']); // {online: bool}
+        $routes->get('online',                    'Drivers::online', ['filter' => 'role:driver']);
+        $routes->get('onlineDrivers',             'Drivers::onlineDrivers', ['filter' => 'role:sender']);
+        $routes->put('capacity',                  'Drivers::updateCapacity',['filter' => 'role:driver']); // limits
+        $routes->get('shipments/open',            'Drivers::listOpenShipments', ['filter' => 'role:driver']); // view available
         $routes->get('shipments/my',              'Drivers::myShipments'); // assigned to me
-        $routes->post('shipments/(:num)/accept',  'Drivers::acceptShipment/$1'); // assign
+        $routes->post('shipments/(:num)/accept',  'Drivers::acceptShipment/$1', ['filter' => 'role:driver']); // assign
         $routes->post('location',                 'Drivers::updateLocation'); // {lat,lng, ...}
     });
 
