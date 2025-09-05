@@ -111,8 +111,8 @@ export default function DriverDashboardScreen() {
             {isOnline ? 'You are online and available for shipments' : 'You are offline'}
           </Text>
         </View>
-        {/* { isOnline && ( */}
-        <View style={{ flex: 1 }}>
+        { isOnline ? (
+        <View style={styles.mapSection}>
           <Maps
             center={center}
             zoom={12} // used on web only
@@ -120,7 +120,7 @@ export default function DriverDashboardScreen() {
             googleMapsApiKey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
           />
         </View>
-        {/* )} */}
+        ) : null }
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Active shipments</Text>
           
@@ -184,6 +184,23 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 10,
+  },
+  mapSection: {
+    flex: 1,
+    minHeight: 400,
+    backgroundColor: '#01081fe0',
+    borderColor: '#01081fe0',
+    borderWidth: 3,
+    borderRadius: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    marginTop: 10,
+    marginBottom: 24,
+    marginHorizontal: 10,
   },
   header: {
     marginBottom: 14,

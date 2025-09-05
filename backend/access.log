@@ -3037,3 +3037,8 @@
 172.18.0.1 - - [04/Sep/2025:05:29:29 +0000] "GET /api/drivers/online HTTP/1.1" 200 771 "http://localhost:8081/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
 172.18.0.1 - - [04/Sep/2025:05:29:32 +0000] "GET /api/drivers/online HTTP/1.1" 200 770 "http://localhost:8081/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
 172.18.0.1 - - [04/Sep/2025:21:15:38 +0000] "GET /api/users HTTP/1.1" 401 821 "-" "PostmanRuntime/7.45.0"
+172.18.0.1 - - [05/Sep/2025:03:55:47 +0000] "GET /api/users HTTP/1.1" 401 821 "-" "PostmanRuntime/7.45.0"
+172.18.0.1 - - [05/Sep/2025:03:56:43 +0000] "POST /api/v1/auth/login HTTP/1.1" 404 2551 "-" "PostmanRuntime/7.45.0"
+172.18.0.1 - - [05/Sep/2025:03:57:21 +0000] "POST /api/auth/login HTTP/1.1" 200 1121 "-" "PostmanRuntime/7.45.0"
+172.18.0.1 - - [05/Sep/2025:03:58:43 +0000] "POST /api/auth/login HTTP/1.1" 200 1119 "-" "PostmanRuntime/7.45.0"
+172.18.0.1 - - [05/Sep/2025:03:59:10 +0000] "GET /api/users HTTP/1.1" 200 5075 "-" "PostmanRuntime/7.45.0"

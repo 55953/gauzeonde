@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "config": {
+        "googleMapsApiKey": "AIzaSyCA_BjCti-4Gkszg2zijwnsfkpk0Y7gknE",
         "usesNonExemptEncryption": false
       }
     },
@@ -23,6 +24,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCA_BjCti-4Gkszg2zijwnsfkpk0Y7gknE"
+        }
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan"
