@@ -11,7 +11,7 @@ class ShipmentModel extends Model
     protected $allowedFields = [
         'sender_id', 'tracking_number', 'status', 'description', 'origin', 'destination', 
         'driver_id', 'current_location', 'pickup_time', 'delivery_time',
-        'weight_kg','volume_cuft','length_cm','width_cm','height_cm',
+        'weight_kg','volume_cuft','length_cm','width_cm','height_cm', 'payout',
         'created_at', 'updated_at'
     ];
     protected $useTimestamps = true;

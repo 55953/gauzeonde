@@ -24,9 +24,11 @@ export interface Drivers{
   vehicleType: string;
   vehiclePlate: string;
   isOnline: boolean;
+  profile_image_url: string;
   currentLat: number;
   currentLng: number;
   totalDeliveries: number;
+  rating: number;
 }
 
 export interface Senders {
@@ -68,6 +70,7 @@ export interface Shipment {
   height_cm?: number;
   payout?: number;
   discount?: number;
+  payment_status: string;
   [key: string]: any;
 }
 
@@ -106,4 +109,35 @@ export interface shipmentStatus{
   in_transit: boolean,
   delivered: boolean,
   cancelled: boolean
+}
+
+export interface MarkerData {
+    latitude: number;
+    longitude: number;
+    id: number;
+    title: string;
+    profile_image_url: string;
+    car_image_url: string;
+    car_seats: number;
+    rating: number;
+    first_name: string;
+    last_name: string;
+    time?: number;
+    price?: string;
+}
+
+export interface GoogleInputProps {
+  icon?: string;
+  initialLocation?: string;
+  containerStyle?: string;
+  textInputBackgroundColor?: string;
+  handlePress: ({
+                    latitude,
+                    longitude,
+                    address,
+                }: {
+      latitude: number;
+      longitude: number;
+      address: string;
+  }) => void;
 }

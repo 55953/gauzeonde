@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Platform } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Platform, ScrollView, TouchableWithoutFeedback, KeyboardAvoidingView, Keyboard } from "react-native";
 import { Dropdown } from 'react-native-element-dropdown';
 import { AuthApi } from "../../api/api";
 import { useSession } from "../../contexts/AuthContext";
@@ -65,7 +65,7 @@ export default function RegisterScreen() {
   // };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.scrollViewContent}>
       <Text style={styles.header}>Register</Text>
       {msg ? <Text style={styles.error}>{msg}</Text> : null}
       {/* {err ? <Text style={styles.error}>{err}</Text> : null} */}
@@ -96,7 +96,7 @@ export default function RegisterScreen() {
   );
 }
 const styles = StyleSheet.create({
-  container: { 
+  scrollViewContent: { 
     flex:1, 
     justifyContent:"center", 
     padding:24,

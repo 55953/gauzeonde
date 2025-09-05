@@ -21,7 +21,7 @@ interface Delivery {
   createdAt: string;
 }
 
-export default function SenderDashboard() {
+export default function SenderDashboard_noScreen() {
   const navigation = useNavigation<any>();
   const { session } = useSession();
 

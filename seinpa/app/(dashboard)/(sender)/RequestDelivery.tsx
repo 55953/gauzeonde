@@ -32,7 +32,7 @@ interface Driver {
   deliveriesCount: number;
 }
 
-export default function RequestDelivery() {
+export default function RequestDeliveryScreen() {
   const navigation = useNavigation<any>();
   const [isLoading, setIsLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);

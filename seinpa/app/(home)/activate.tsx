@@ -4,7 +4,7 @@ import { View, Text, TextInput, Button, StyleSheet, Platform } from 'react-nativ
 import { StatusBar } from 'expo-status-bar';
 import { AuthApi } from "../../api/api";
 
-export default function Modal() {
+export default function ActivateScreen() {
   const isPresented = router.canGoBack();
   const [activationCode, setActivationCode] = useState(null);
   const [message, setMessage] = useState("");
@@ -16,6 +16,7 @@ export default function Modal() {
     try {
       const res = await AuthApi.activate(activationCode);
       setMessage((res?.data?.message || "Unknown success message"));
+      router.push("/login");
     } catch (e: any) {
       setErr("Activation failed: " + (e.response?.data?.messages?.error || "Unknown error"));
     }

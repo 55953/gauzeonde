@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 
 
-export default function SendinpathScreen() {
+export default function HomeScreen() {
   return (
     <View style={{ padding: 24 }}>
       <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 12 }}>Welcome to SEnd In PAth</Text>

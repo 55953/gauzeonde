@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import { useSession } from '../../../contexts/AuthContext';
 import TabLayout from "../../../components/TabLayout";
+import { useNavigation } from '@react-navigation/native';
 
-export default function AdminDashboard() {
+export default function AdminDashboardScreen() {
   const { session } = useSession();
+  const navigation = useNavigation();
 
   const stats = {
     totalDeliveries: 1250,
@@ -53,19 +55,19 @@ export default function AdminDashboard() {
         </View>
 
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButton} testID="button-manage-users">
+          <TouchableOpacity onPress={() => navigation.navigate("manageAllUsers")} style={styles.actionButton} testID="button-manage-users">
             <Text style={styles.actionButtonText}>Manage Users</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.actionButton} testID="button-view-deliveries">
-            <Text style={styles.actionButtonText}>View All Deliveries</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("manageAllShipments")} style={styles.actionButton} testID="button-view-deliveries">
+            <Text style={styles.actionButtonText}>Manage Shipments</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionButton} testID="button-driver-management">
+
+          <TouchableOpacity onPress={() => navigation.navigate("driverManagement")} style={styles.actionButton} testID="button-driver-management">
             <Text style={styles.actionButtonText}>Driver Management</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionButton} testID="button-reports">
+
+          <TouchableOpacity onPress={() => navigation.navigate("reportingAnalytics")} style={styles.actionButton} testID="button-reports">
             <Text style={styles.actionButtonText}>Reports & Analytics</Text>
           </TouchableOpacity>
         </View>

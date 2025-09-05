@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { useSession } from "../../../hooks/useSession";
 import GuestOnly from "../../../layouts/auth/GuestOnly";
 
-export default function DetailsLayout() {
+export default function SettingsLayout() {
   const { session } = useSession();
   console.log("Current user in Details Layout:", session?.user);
   return (

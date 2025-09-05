@@ -37,10 +37,11 @@
       "web"
     ],
     "plugins": [
-      "expo-secure-store", 
-      "expo-router", 
-      "expo-notifications", 
-      "expo-splash-screen"
+      "expo-secure-store",
+      "expo-router",
+      "expo-notifications",
+      "expo-splash-screen",
+      "expo-maps"
     ]
   }
 }

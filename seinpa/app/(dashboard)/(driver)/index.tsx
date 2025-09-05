@@ -9,8 +9,12 @@ import {
   ActivityIndicator,
   Switch,
 } from 'react-native';
-import { ShipmentApi, DriverApi, setAuthToken } from '../../../api/api';
+import { ShipmentApi, DriverApi } from '../../../api/api';
 import { useSession } from '../../../contexts/AuthContext';
+
+import { GoogleMap, Marker, Polyline, useJsApiLoader, MarkerClusterer } from "@react-google-maps/api";
+import Maps from '../../../components/Maps';
+import type { MarkerItem } from '../../../components/Maps.types';
 
 interface DriverDelivery {
   id: string;
@@ -22,7 +26,7 @@ interface DriverDelivery {
   amount: number;
 }
 
-export default function DriverDashboard() {
+export default function DriverDashboardScreen() {
   const { session } = useSession();
   const [isOnline, setIsOnline] = useState(false);
 
@@ -49,28 +53,28 @@ export default function DriverDashboard() {
 
   const checkDriverOnline = async () => {
     try {
-      const storedToken = session?.token;
-      console.log("CHECKING DRIVER IS ONLINE");
-      if (storedToken) {
         await DriverApi.getOnline()
         .then(response =>{
           console.log("Driver online status:", response.data);
           setIsOnline(response.data.online);
         })
-      }
     } catch (error) {
       console.error('Error checking auth status:', error);
     }
   };
 
   const toggleOnlineStatus = async () => {
-    setAuthToken(session?.token);
     await DriverApi.setOnline(!isOnline)
     .then(response => {
       console.log("the response:", response);
       setIsOnline(!isOnline);
     });
   };
+
+  const center = { lat: 38.8951, lng: -77.0364 };
+  const markers: MarkerItem[] = [
+    { id: 1, position: center, title: "You" }
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -80,6 +84,16 @@ export default function DriverDashboard() {
           <Text style={styles.title}>
             Welcome, <Text style={styles.subtitle}>{session?.user?.name || 'Driver'} 👋 Role: {session?.user?.role}</Text>
           </Text>
+        </View>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statLabel}>Today's shipments</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>$284.50</Text>
+            <Text style={styles.statLabel}>Today's Earnings</Text>
+          </View>
         </View>
 
         <View style={styles.statusCard}>
@@ -97,18 +111,16 @@ export default function DriverDashboard() {
             {isOnline ? 'You are online and available for shipments' : 'You are offline'}
           </Text>
         </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>12</Text>
-            <Text style={styles.statLabel}>Today's shipments</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>$284.50</Text>
-            <Text style={styles.statLabel}>Today's Earnings</Text>
-          </View>
+        {/* { isOnline && ( */}
+        <View style={{ flex: 1 }}>
+          <Maps
+            center={center}
+            zoom={12} // used on web only
+            markers={markers}
+            googleMapsApiKey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
+          />
         </View>
-
+        {/* )} */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Active shipments</Text>
           

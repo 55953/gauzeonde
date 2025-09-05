@@ -29,7 +29,7 @@
 //   }[];
 // }
 
-// export default function ShipmentTrack({ route }: any) {
+// export default function ShipmentTrackScreen({ route }: any) {
 //   const deliveryId = route?.params?.deliveryId || '1';
 //   const [trackingData, setTrackingData] = useState<TrackingData | null>(null);
 //   const [isLoading, setIsLoading] = useState(true);

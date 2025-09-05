@@ -1,28 +1,54 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axios from "axios";
+import storage from "@utils/storage"; // AsyncStorage/localStorage wrapper
 import { Shipment, User } from "../types";
 
 // CHANGE THIS to your deployed API URL
 export const API_BASE = process.env.EXPO_PUBLIC_API_BASE; // e.g. Docker host or production URL
 
-const api: AxiosInstance = axios.create({
+// const api: AxiosInstance = axios.create({
+//   baseURL: API_BASE,
+//   headers: { 
+//     "Access-Control-Allow-Origin": "*", 
+//     "Content-Type": "application/json" ,
+//     },
+//   timeout: 15000,
+// });
+
+const api = axios.create({
   baseURL: API_BASE,
-  headers: { 
-    "Access-Control-Allow-Origin": "*", 
-    "Content-Type": "application/json" ,
-    },
-  timeout: 15000,
+  headers: { "Content-Type": "application/json" },
+  timeout: 5000,
 });
 
-// const api = axios.create({
-//   baseURL: API_BASE,
-//   headers: {
-//     'Access-Control-Allow-Origin': '*',
-//     'Access-Control-Allow-Credentials': true,
-//     'Access-Control-Expose-Headers': 'Content-Security-Policy',
-//     'Content-Type': 'application/json',
-//   },
-//   timeout: 15000
-// });
+// Attach token automatically from storage
+api.interceptors.request.use(
+  async (config) => {
+    const token = await storage.getItem("token");
+    if (token) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${token}`,
+      };
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Handle 401 globally if you want (optional)
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or unauthorized
+      // Optionally clear storage and redirect to login
+      await storage.removeItem("token");
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
 
 // Inject JWT token into all requests, if available
 // api.interceptors.request.use(
@@ -52,13 +78,10 @@ const api: AxiosInstance = axios.create({
 // Keep token in memory (best for RN; you can hydrate from storage in your AuthContext)
 // let authToken: string | null = null;
 
-export async function setAuthToken(token: string | null) {
-
-  if (token) await (api.defaults.headers.common["Authorization"] = `Bearer ${token}`);
-  else await (delete api.defaults.headers.common["Authorization"]);
-}
-
-
+// export async function setAuthToken(token: string | null) {
+//   if (token) await (api.defaults.headers.common["Authorization"] = `Bearer ${token}`);
+//   else await (delete api.defaults.headers.common["Authorization"]);
+// }
 // --- AUTH ENDPOINTS ---
 export const AuthApi = {
   login: (email: string, password: string) =>
@@ -97,6 +120,31 @@ export const UserApi = {
     api.get<User[]>("/users", { params: { role: "driver", ...filters } }),
   filter: (param?: Record<string, any>) =>
     api.get("/users", { params: { ...param } }),
+  listUsers: (params?: {
+    role?: string;
+    status?: string;
+    online?: boolean;
+    search?: string;
+    page?: number;
+    per_page?: number;
+  }) => api.get("/users", { params }),
+
+  getById: (id: number) => api.get(`/users/${id}`),
+
+  updateById: (id: number, data: Partial<{
+    name: string;
+    email: string;
+    phone: string;
+    role: "driver" | "sender" | "admin";
+    status: "active" | "pending" | "suspended";
+    online: boolean;
+    vehicle_type: string;
+    max_weight_kg: number;
+    max_volume_cuft: number;
+    max_length_cm: number;
+    max_width_cm: number;
+    max_height_cm: number;
+  }>) => api.put(`/users/${id}`, data)
 };
 
 // --- POINT OF ALL USER FILTERS ---
@@ -177,4 +225,3 @@ export const AdminApi = {
   // Add more admin methods as needed
 };
 
-export default api;

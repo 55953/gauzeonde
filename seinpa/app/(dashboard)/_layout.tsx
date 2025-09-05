@@ -13,23 +13,39 @@ export default function TabLayout() {
    const { session } = useSession();
     let dashboardRole = session?.user?.role || 'sender';
     let dashboardName: string= "";
+    let drivertabhide: string = "";
+    let sendertabhide: string = "";
+    let admintabhide: string = "";
     switch (dashboardRole) {
       case 'admin':
         dashboardName = "(admin)";
+        admintabhide = "admin";
+        drivertabhide = "(driver)";
+        sendertabhide = "(sender)";
         break;
       case 'driver':
         dashboardName = "(driver)";
+        admintabhide = "(admin)";
+        drivertabhide = "driver";
+        sendertabhide = "(sender)";
         break;
       case 'sender':
         dashboardName = "(sender)";
+        admintabhide = "(admin)";
+        sendertabhide = "sender";
+        drivertabhide = "(driver)";
         break;
       default:
         dashboardName = "(sender)";
+        admintabhide = "(admin)";
+        sendertabhide = "sender";
+        drivertabhide = "(driver)";
     }
 
   return (
     <>
-    <Tabs 
+    <Tabs
+      initialRouteName={dashboardName}
       screenOptions={{
         headerShown: false,
         tabBarStyle: { paddingBottom: 4, height: 56 },
@@ -114,7 +130,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen 
-        name="(profile)/Profile" 
+        name="(profile)/editProfile" 
         options={{
           href: null
         }}
@@ -131,24 +147,24 @@ export default function TabLayout() {
           href: null
         }}
       />
-      {/* <Tabs.Screen 
-        name="(driver)" 
+      <Tabs.Screen 
+        name={drivertabhide} 
         options={{
           href: null
         }}
-      /> */}
-      {/* <Tabs.Screen 
-        name="(sender)" 
+      />
+      <Tabs.Screen 
+        name={sendertabhide}
         options={{
           href: null
         }}
-      /> */}
-      {/* <Tabs.Screen 
-        name="(admin)" 
+      />
+      <Tabs.Screen 
+        name={admintabhide} 
         options={{
           href: null
         }}
-      /> */}
+      />
     </Tabs>
     </>
   );

@@ -9,7 +9,7 @@ class ItineraryModel extends Model
     protected $table      = 'itineraries';
     protected $primaryKey = 'id';
     protected $allowedFields = [
-        'user_id', 'origin', 'destination', 'departure_time', 'arrival_time', 'vehicle_details', 'status', 'created_at'
+        'driver_id', 'title', 'origin', 'destination', 'start_lat', 'start_lng', 'end_lat', 'end_lng', 'departure_time', 'arrival_time', 'status', 'vehicle_details', 'polyline', 'created_at', 'updated_at'
     ];
     public $timestamps = false;
 }

@@ -4,7 +4,7 @@ import api from "../../../api/api";
 import { User, Shipment } from "../../../types";
 import { useSession } from "../../../contexts/AuthContext";
 
-export default function DriverDashboard() {
+export default function DriverDashboard_noScreen() {
   const { session } = useSession();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   console.log("DriverDashboard session:", session);
@@ -12,7 +12,7 @@ export default function DriverDashboard() {
     api.get(`/drivers/${session?.user?.sub}/shipments`)
       .then(res => setShipments(res.data))
       .catch(() => setShipments([]));
-  }, [session?.user]);
+  }, [session?.user?.user_id]);
   const earnings = shipments.reduce((sum, s) => sum + (s.payout || 0), 0);
   return (
       <View>

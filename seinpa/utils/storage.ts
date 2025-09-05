@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 let storage: {
   getItem: (key: string) => Promise<string | null>;
@@ -14,8 +15,6 @@ if (Platform.OS === "web") {
   };
 } else {
   // Native: use AsyncStorage
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const AsyncStorage = require("@react-native-async-storage/async-storage").default;
   storage = {
     getItem: AsyncStorage.getItem,
     setItem: AsyncStorage.setItem,

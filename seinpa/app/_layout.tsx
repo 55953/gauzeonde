@@ -2,7 +2,7 @@ import React, { useEffect, StrictMode } from "react";
 import { useFonts } from 'expo-font';
 import { Stack, withLayoutContext } from "expo-router";
 import { StyleSheet, Text, View, Appearance, useColorScheme, Platform} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import TopNav from "@components/TopNav";
 import Footer  from "@components/Footer";
 import { StatusBar } from 'expo-status-bar';
@@ -34,14 +34,16 @@ export default function RootLayout() {
     }
 
   return (
-    <StrictMode>
-    <AuthProvider>
-      <SafeAreaView style={styles.safe}>
-        <StatusBar style="auto" />
-        <RootNavigator />
-      </SafeAreaView>
-    </AuthProvider>
-    </StrictMode>
+
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safe}>
+          <AuthProvider>
+              <StatusBar style="auto" />
+              <RootNavigator />
+          </AuthProvider>
+        </SafeAreaView>
+      </SafeAreaProvider>
+
   );
 }
 
@@ -49,8 +51,8 @@ function RootNavigator() {
 
   const { isLoggedIn, session } = useSession();
 
-  console.log("Is Logged In:", isLoggedIn);
-  console.log("Session Data:", session);
+  // console.log("Is Logged In:", isLoggedIn);
+  // console.log("Session Data:", session);
 
   return (
     <>
@@ -75,7 +77,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 20,
+    paddingBottom: 10,
   },
   safe: {
     flex: 1,

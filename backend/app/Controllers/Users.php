@@ -22,16 +22,75 @@ class Users extends ResourceController
 
     /**
      * Get user profile by ID
-     * GET /api/user/{id}
+     * GET /api/users/{id}
      */
     public function show($userId = null)
     {
+        if (!$userId || !is_numeric($userId)) {
+            return $this->failValidationError('Invalid user id');
+        }
+
         $user = $this->users->find($userId);
         if (!$user) {
             return $this->failNotFound('User not found');
         }
-        unset($user['password']);
+        unset($user['password'], $user['reset_token'], $user['activation_code']);
         return $this->respond($user);
+    }
+
+    /**
+     * PUT /users/{id}
+     * Admin can update user profile, role, status, etc.
+     */
+    public function update($id = null)
+    {
+        if (!$id || !is_numeric($id)) {
+            return $this->failValidationError('Invalid user id');
+        }
+
+        $user = $this->users->find($id);
+        if (!$user) {
+            return $this->failNotFound('User not found');
+        }
+
+        $data = $this->request->getJSON(true) ?? [];
+        if (empty($data)) {
+            return $this->failValidationError('No data provided');
+        }
+        $allowed = [
+            'name',
+            'email',
+            'phone',
+            'role',
+            'is_suspended',
+            'reason_of_suspension',
+            'status',
+            'online',
+            'vehicle_type',
+            'max_weight_kg',
+            'max_volume_cuft',
+            'max_length_cm',
+            'max_width_cm',
+            'max_height_cm',
+        ];
+
+        $updateData = [];
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $data)) {
+                $updateData[$field] = $data[$field];
+            }
+        }
+
+        if (empty($updateData)) {
+            return $this->failValidationError('No valid fields to update');
+        }
+
+        $this->users->update($id, $updateData);
+
+        $updated = $this->users->find($id);
+        unset($updated['password'], $updated['reset_token'], $updated['activation_code']);
+
+        return $this->respond(['message' => 'User updated', 'data' => $updated]);
     }
 
     /**

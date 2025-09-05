@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Shipment }  from '../../../types/index';
 
 
-export default function SenderDashboard() {
+export default function SenderDashboardScreen() {
   const navigation = useNavigation<any>();
   const { session } = useSession();
 
