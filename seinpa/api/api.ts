@@ -210,12 +210,14 @@ export const ShipmentApi = {
   transfer: (id: number, toDriverId: number, notes: string) => api.post(`/shipments/${id}/transfer`, { to_driver_id: toDriverId, notes }),
   payments: (id: number) => api.get(`/shipments/${id}/payments`),
   getLocations: (shipmentId: number) => api.get(`/shipments/${shipmentId}/locations`),
+  listMine: (params?: { page?: number; per_page?: number; status?: string }) =>
+    api.get('/shipments', { params }),
 };
 
 // --- SENDER ENDPOINTS ---
 export const SenderApi = {
   getShipments: (senderId: number) =>
-    api.get<Shipment[]>(`/senders/${senderId}/shipments`),
+    api.get<Shipment[]>(`/senders/${senderId}/myshipments`),
 };
 
 // --- ADMIN ENDPOINTS ---

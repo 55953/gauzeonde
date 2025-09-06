@@ -9,12 +9,12 @@ import {
   ActivityIndicator,
   Switch,
 } from 'react-native';
-import { ShipmentApi, DriverApi } from '../../../api/api';
+import { ShipmentApi, DriverApi } from '@api/api';
 import { useSession } from '../../../contexts/AuthContext';
 
 import { GoogleMap, Marker, Polyline, useJsApiLoader, MarkerClusterer } from "@react-google-maps/api";
 import Maps from '../../../components/Maps';
-import type { MarkerItem } from '../../../components/Maps.types';
+import type { MarkerItem } from '@components/Maps.types';
 
 interface DriverDelivery {
   id: string;

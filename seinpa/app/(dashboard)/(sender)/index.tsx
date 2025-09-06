@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,  useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,62 +7,79 @@ import {
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from '../../../contexts/AuthContext';
-import { SenderApi, ShipmentApi } from '../../../api/api';
+import useMyShipments from '@hooks/useMyShipments';
+import { SenderApi, ShipmentApi } from '@api/api';
 import { Ionicons } from '@expo/vector-icons';
-import { Shipment }  from '../../../types/index';
+import { Shipment }  from 'types/index';
 
 
 export default function SenderDashboardScreen() {
   const navigation = useNavigation<any>();
-  const { session } = useSession();
+
+  const { session } = useSession(); // ensure user is set after login
+  const { items, loading, err, load, refresh, hasMore } = useMyShipments();
+
+  useEffect(() => {
+    load(true); // initial load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // const renderItem = ({ item }: any) => (
+  //   <TouchableOpacity
+  //     onPress={() => navigation.navigate('ShipmentDetail', { id: item.id })}
+  //     style={{ padding: 12, borderBottomColor: '#eee', borderBottomWidth: 1 }}
+  //   >
+  //     <Text style={{ fontWeight: '700' }}>{item.origin} ➜ {item.destination}</Text>
+  //     <Text>Status: {item.status} • {new Date(item.created_at).toLocaleString()}</Text>
+  //     {item.tracking_number ? <Text>Tracking: {item.tracking_number}</Text> : null}
+  //   </TouchableOpacity>
+  // );
+
+    // e.g., tabs: All | Pending | In Transit | Delivered
+        // const [status, setStatus] = useState<string | undefined>(undefined);
+        // const { items, load, refresh } = useMyShipments({ status });
+
+        // useEffect(() => { load(true); }, [status]);
+
+
+
 
   // In a real app, this would fetch from your API
-  // const { data: deliveries = [], isLoading } = useQuery<Shipment[]>({
-  //   queryKey: ['deliveries', 'sender'],
+  // const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
+  //   queryKey: ['shipments', 'sender'],
   //   queryFn: async () => {
-  //     // Mock data for now
-  //     return [
-  //       {
-  //         id: '1',
-  //         status: 'in_transit',
-  //         pickupAddress: '123 Main St',
-  //         deliveryAddress: '456 Oak Ave',
-  //         totalAmount: 25.99,
-  //         createdAt: '2024-01-15T10:00:00Z',
-  //       },
-  //       {
-  //         id: '2',
-  //         status: 'delivered',
-  //         pickupAddress: '789 Pine St',
-  //         deliveryAddress: '321 Elm St',
-  //         totalAmount: 18.50,
-  //         createdAt: '2024-01-14T15:30:00Z',
-  //       },
-  //     ];
+  //     if (!session?.user?.id) return [];
+  //     const response = await SenderApi.getShipments<Shipment[]>({
+  //       senderId: session.user.id,
+  //     });
+  //     return response.data;
   //   },
+  // }, {
+  //   enabled: !!session?.user?.id,
   // });
-  const { data: shipments = [], isLoading } = //[ ShipmentApi.getShipmentsBySender(session?.user?.id || '1') ||]
-        
-           [ {
-              id: '1',
-              status: 'in_transit',
-              pickupAddress: '123 Main St',
-              deliveryAddress: '456 Oak Ave',
-              totalAmount: 25.99,
-              createdAt: '2024-01-15T10:00:00Z',
-            },
-            {
-              id: '2',
-              status: 'delivered',
-              pickupAddress: '789 Pine St',
-              deliveryAddress: '321 Elm St',
-              totalAmount: 18.50,
-              createdAt: '2024-01-14T15:30:00Z',
-            }];
+  // const { data: shipments = [], isLoading } = SenderApi.getShipments(session?.user?.sub || '1') || []
+
+  //          [ {
+  //             id: '1',
+  //             status: 'in_transit',
+  //             pickupAddress: '123 Main St',
+  //             deliveryAddress: '456 Oak Ave',
+  //             totalAmount: 25.99,
+  //             createdAt: '2024-01-15T10:00:00Z',
+  //           },
+  //           {
+  //             id: '2',
+  //             status: 'delivered',
+  //             pickupAddress: '789 Pine St',
+  //             deliveryAddress: '321 Elm St',
+  //             totalAmount: 18.50,
+  //             createdAt: '2024-01-14T15:30:00Z',
+  //           }];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -102,7 +119,7 @@ export default function SenderDashboardScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.requestButton}
-          onPress={() => navigation.navigate('ShipmentTrack', { deliveryId: '1' })}
+          onPress={() => navigation.navigate('CreateShipment')}
           testID="button-new-delivery"
         >
           <Text style={styles.requestButtonText}>+ Create a New Shipment</Text>
@@ -111,12 +128,12 @@ export default function SenderDashboardScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Shipments</Text>
           
-          {isLoading ? (
+          {loading ? (
             <View style={styles.loading}>
               <ActivityIndicator size="large" color="#3b82f6" />
               <Text>Loading shipments...</Text>
             </View>
-          ) : shipments.length === 0 ? (
+          ) : items.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>No shipments found</Text>
               <Text style={styles.emptySubtext}>
@@ -124,7 +141,7 @@ export default function SenderDashboardScreen() {
               </Text>
             </View>
           ) : (
-            shipments.map((shipment) => (
+            items.map((shipment) => (
               <TouchableOpacity
                 key={shipment.id}
                 style={styles.shipmentCard}

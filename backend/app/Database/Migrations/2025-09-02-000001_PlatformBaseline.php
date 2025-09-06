@@ -20,7 +20,7 @@ class PlatformBaseline extends Migration
                 'phone' => ['type' => 'VARCHAR', 'constraint' => 30, 'null' => true],
                 'password' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => false],
                 'role' => ['type' => 'VARCHAR', 'constraint' => 20, 'null' => false, 'default' => 'sender'], // driver|sender|admin
-                'status' => ['type' => 'VARCHAR', 'constraint' => 20, 'null' => false, 'default' => 'pending'], // active|pending|suspended
+                'status' => ['type' => 'VARCHAR', 'constraint' => 20, 'null' => false, 'default' => 'pending'], // active|pending|suspended| blocked|inactive| on_hold|pending_verification
                 'is_suspended' => ['type' => 'BOOLEAN', 'null' => false, 'default' => false],
                 'reason_of_suspension' => ['type' => 'TEXT', 'null' => true],
                 // driver presence

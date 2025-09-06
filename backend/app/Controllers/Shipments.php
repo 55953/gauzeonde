@@ -8,47 +8,140 @@ use CodeIgniter\Events\Events;
 use CodeIgniter\API\ResponseTrait;
 use App\Enums\ShipmentStatus;
 use Endroid\QrCode\Builder\Builder;
+use Exception;
 
 
 class Shipments extends ResourceController
 {
+    use ResponseTrait;
+    protected $shipmentModel;
+    
+    public function __construct()
+    {
+        $this->shipmentModel = new ShipmentModel();
+    }
+
+    // app/Controllers/Shipments.php (add)
+    public function index()
+    {
+        $auth = service('auth');
+        $me   = $auth?->currentUser();
+        if (!$me) {
+            return $this->failUnauthorized('Unauthenticated');
+        }
+
+        $role = $me['role'] ?? 'sender';
+
+        $page     = max(1, (int)($this->request->getGet('page') ?? 1));
+        $perPage  = min(100, max(1, (int)($this->request->getGet('per_page') ?? 20)));
+        $status   = $this->request->getGet('status');    // optional filter
+        $userIdQ  = $this->request->getGet('user_id');   // admin-only
+
+        $builder = $this->shipmentModel->builder()->select('*');
+
+        if ($role === 'sender') {
+            // Scope strictly to this sender
+            $builder->where('sender_id', $me['id']);
+        } elseif ($role === 'driver') {
+            // Optional driver’s shipments (if you want driver dashboard to reuse)
+            if ($this->request->getGet('mine') === 'driver') {
+                $builder->where('driver_id', $me['id']);
+            }
+        } elseif ($role === 'admin') {
+            if ($userIdQ) {
+                $builder->where('sender_id', (int)$userIdQ);
+            }
+        }
+
+        if (!empty($status)) {
+            $builder->where('status', $status);
+        }
+
+        $builder->orderBy('created_at', 'DESC');
+
+        // Pagination
+        $offset = ($page - 1) * $perPage;
+        $total  = $builder->countAllResults(false);
+        $rows   = $builder->limit($perPage, $offset)->get()->getResultArray();
+
+        return $this->respond([
+            'data' => $rows,
+            'meta' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => (int)$total,
+                'total_pages' => (int)ceil($total / $perPage),
+            ],
+        ]);
+    }
+
+
     /**
+     * POST /shipments
      * Create a new shipment
      */
     public function create()
     {
-        $rules = [
-            'sender_id' => 'required|is_natural_no_zero',
-            'description' => 'required',
-            'origin' => 'required',
-            'destination' => 'required',
-            'weight' => 'required|decimal'
-        ];
+        try {
 
-        if (!$this->validate($rules)) {
-            return $this->failValidationErrors($this->validator->getErrors());
+            $currentUser = $this->request->user;
+
+            if (!$currentUser || $currentUser['role'] !== 'sender') {
+                return $this->failForbidden('Only senders can create shipments');
+            }
+
+            $data = $this->request->getJSON(true);
+            // Validate required fields
+            $rules = [ // Must be the current user
+                'sender_id'    => 'required|integer',
+                'driver_id'    => 'permit_empty|integer',
+                'origin'       => 'required|string',
+                'destination'  => 'required|string',
+                'pickup_lat'   => 'required|decimal',
+                'pickup_lng'   => 'required|decimal'
+            ];
+
+            if (! $this->validate($rules)) {
+                return $this->failValidationErrors($this->validator->getErrors());
+            }
+
+            $insertData = [
+                'sender_id'       => $currentUser['id'],
+                'tracking_number' => 'TRK'.strtoupper(bin2hex(random_bytes(5))),
+                'driver_id'     => $data['driver_id'] ?? null,
+                'origin'        => $data['origin'],
+                'destination'   => $data['destination'],
+                'pickup_lat'    => $data['pickup_lat'],
+                'pickup_lng'    => $data['pickup_lng'],
+                'dest_lat'      => $data['dest_lat'] ?? null,
+                'dest_lng'      => $data['dest_lng'] ?? null,
+                'weight_kg'     => $data['weight_kg'] ?? null,
+                'length_cm'     => $data['length_cm'] ?? null,
+                'width_cm'      => $data['width_cm'] ?? null,
+                'height_cm'     => $data['height_cm'] ?? null,
+                'status'        => $data['status'] ?? 'pending',
+                'notes'         => $data['notes'] ?? null,
+                'payout'        => $data['quote_usd'] ?? null,
+                'created_at'    => date('Y-m-d H:i:s'),
+                'updated_at'    => date('Y-m-d H:i:s'),
+            ];
+            // print_r(json_encode($insertData)); die();
+            $shipmentModel = new ShipmentModel();
+            $shipmentModel->insert($insertData);
+            $id = $shipmentModel->getInsertID();
+
+            $shipment = $shipmentModel->find($id);
+
+            // Optional: trigger event (shipment_created)
+            // event('shipment_created', $shipment);
+
+            return $this->respondCreated([
+                'message'  => 'Shipment created successfully',
+                'data'     => $shipment,
+            ]);
+        } catch (Exception $e) {
+            return $this->failServerError($e->getMessage());
         }
-
-        $shipmentModel = new ShipmentModel();
-        $data = [
-            'sender_id' => $this->request->getVar('sender_id'),
-            'tracking_number' => strtoupper(bin2hex(random_bytes(5))),
-            'description' => $this->request->getVar('description'),
-            'origin' => $this->request->getVar('origin'),
-            'destination' => $this->request->getVar('destination'),
-            'weight' => $this->request->getVar('weight'),
-            'status' => 'pending'
-        ];
-        $shipmentModel->insert($data);
-
-        // Fetch the created shipment (with ID and tracking_number)
-        $shipment = $shipmentModel->where('tracking_number', $data['tracking_number'])->first();
-
-        // Fire event!
-        // Events::trigger('shipment_created', $shipment); No Generic for $shipment status
-        Events::trigger('shipment_status_changed', [$shipment, 'created']);
-
-        return $this->respondCreated($data);
     }
 
     /**
@@ -249,4 +342,113 @@ class Shipments extends ResourceController
         return $this->respond(['message' => 'Transfer complete']);
     }
 
+    /**
+     * PUT /shipment/{id}
+     * Update fields on a shipment (admin/driver back office)
+     */
+
+    public function update($id = null)
+    {
+        if (!$id || !is_numeric($id)) {
+            return $this->failValidationError('Invalid shipment id');
+        }
+
+        $existing = $this->shipmentModel->find($id);
+        if (!$existing) {
+            return $this->failNotFound('Shipment not found');
+        }
+
+        // JSON body as assoc array
+        $data = $this->request->getJSON(true) ?? [];
+
+        // Whitelist updatable fields
+        $allowed = [
+            'user_id',
+            'driver_id',
+            'origin', 'destination',
+            'pickup_lat', 'pickup_lng',
+            'dest_lat', 'dest_lng',
+            'weight_kg', 'length_cm', 'width_cm', 'height_cm',
+            'status',
+            'notes',
+        ];
+
+        $update = [];
+        foreach ($allowed as $f) {
+            if (array_key_exists($f, $data)) {
+                $update[$f] = $data[$f];
+            }
+        }
+
+        if (empty($update)) {
+            return $this->failValidationError('No valid fields to update');
+        }
+
+        // Basic validation (add/adjust as needed)
+        $rules = [
+            'pickup_lat' => 'permit_empty|decimal',
+            'pickup_lng' => 'permit_empty|decimal',
+            'dest_lat'   => 'permit_empty|decimal',
+            'dest_lng'   => 'permit_empty|decimal',
+            'weight_kg'  => 'permit_empty|decimal',
+            'length_cm'  => 'permit_empty|decimal',
+            'width_cm'   => 'permit_empty|decimal',
+            'height_cm'  => 'permit_empty|decimal',
+            'driver_id'  => 'permit_empty|integer',
+            'user_id'    => 'permit_empty|integer',
+            'status'     => 'permit_empty|in_list[pending,ready_for_pickup,awaiting_driver,assigned,in_transit,delivered,cancelled]',
+        ];
+        if (! $this->validateData($update, $rules)) {
+            return $this->failValidationErrors($this->validator->getErrors());
+        }
+
+        // Status transition guard (optional – relax or extend as needed)
+        if (isset($update['status'])) {
+            $from = $existing['status'] ?? 'pending';
+            $to   = $update['status'];
+
+            $allowedTransitions = [
+                'pending'           => ['ready_for_pickup','awaiting_driver','cancelled'],
+                'ready_for_pickup'  => ['awaiting_driver','assigned','cancelled'],
+                'awaiting_driver'   => ['assigned','cancelled'],
+                'assigned'          => ['in_transit','cancelled'],
+                'in_transit'        => ['delivered','cancelled'],
+                'delivered'         => [],        // terminal
+                'cancelled'         => [],        // terminal
+            ];
+            if (isset($allowedTransitions[$from]) && !in_array($to, $allowedTransitions[$from], true)) {
+                return $this->failValidationError("Illegal status transition: {$from} → {$to}");
+            }
+        }
+
+        // Detect assignment change
+        $assignmentChanged = isset($update['driver_id']) && $update['driver_id'] != ($existing['driver_id'] ?? null);
+
+        // Persist
+        $update['updated_at'] = date('Y-m-d H:i:s');
+        $this->shipmentModel->update($id, $update);
+
+        $updated = $this->shipmentModel->find($id);
+
+        // Fire domain events (listeners can push notifications/webhooks)
+        if ($assignmentChanged) {
+            event('shipment_assigned', [
+                'shipment'  => $updated,
+                'oldDriver' => $existing['driver_id'] ?? null,
+                'newDriver' => $updated['driver_id'] ?? null,
+            ]);
+        }
+        if (isset($update['status']) && $update['status'] !== ($existing['status'] ?? null)) {
+            event('shipment_status_changed', [
+                'shipment'  => $updated,
+                'from'      => $existing['status'] ?? null,
+                'to'        => $update['status'],
+            ]);
+        }
+
+        return $this->respond([
+            'message' => 'Shipment updated',
+            'data'    => $updated,
+        ]);
+    }
 }

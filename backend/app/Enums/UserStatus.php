@@ -7,6 +7,9 @@ enum UserStatus: string
     case ACTIVE = 'active';
     case INACTIVE = 'inactive';
     case BLOCKED = 'blocked';
+    case SUSPENDED = 'suspended';
+    case ONHOLD = 'on_hold';
+    case PENDING = 'pending';
     case PENDING_VERIFICATION = 'pending_verification';
 
     public static function values(): array

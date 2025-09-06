@@ -65,13 +65,13 @@ $routes->group('api', function(RouteCollection $routes): void {
 
     // --- SHIPMENTS ---
     $routes->group('', ['filter' => 'auth'], function($routes) {
-        $routes->get('shipments',                 'Shipment::index');
-        $routes->post('shipments',                'Shipment::create', ['filter' => 'role:sender']);
-        $routes->get('shipments/(:num)',          'Shipment::show/$1');
-        $routes->put('shipments/(:num)',          'Shipment::update/$1');
-        $routes->delete('shipments/(:num)',       'Shipment::delete/$1', ['filter' => 'role:admin']);
+        $routes->get('shipments',                 'Shipments::index'); // list (scoped by role)
+        $routes->post('shipments',                'Shipments::create', ['filter' => 'role:sender']);
+        $routes->get('shipments/(:num)',          'Shipments::show/$1');
+        $routes->put('shipments/(:num)',          'Shipments::update/$1');
+        $routes->delete('shipments/(:num)',       'Shipments::delete/$1', ['filter' => 'role:admin']);
         $routes->get('shipments/(:num)/history',  'ShipmentStatusHistory::index/$1');
-        $routes->get('shipments/track/(:segment)','Shipment::track/$1');
+        $routes->get('shipments/track/(:segment)','Shipments::track/$1');
         $routes->post('shipments/(:num)/transfer','ShipmentTransfer::transfer/$1', ['filter' => 'role:driver']);
         $routes->get('shipments/(:num)/transfers','ShipmentTransfer::history/$1');
     });
@@ -99,6 +99,11 @@ $routes->group('api', function(RouteCollection $routes): void {
         $routes->get('dashboard/shipments',       'Dashboard::shipments', ['filter' => 'role:admin']);
         $routes->get('dashboard/drivers',         'Dashboard::drivers', ['filter' => 'role:admin']);
         $routes->get('dashboard/activity',        'Dashboard::activityLog', ['filter' => 'role:admin']);
+    });
+
+    // --- SENDER (protected by JWT + role:sender) ---
+    $routes->group('senders', ['filter' => 'auth'], function($routes) {
+        $routes->get('(:num)/myshipments',     'Shipments::myShipments/$1', ['filter' => 'role:sender']); // shipments created by me
     });
 
     // --- HEALTH CHECK / MISC ---
